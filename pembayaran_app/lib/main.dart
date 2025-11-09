@@ -5,6 +5,7 @@ import 'screens/payment_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/login_screen.dart';
+import 'utils/app_navigator.dart';
 import 'providers/auth_provider.dart';
 
 void main() {
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Aplikasi Pembayaran',
       debugShowCheckedModeBanner: false,
+      navigatorKey: AppNavigator.navigatorKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,

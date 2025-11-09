@@ -58,6 +58,8 @@ class AuthProvider extends ChangeNotifier {
     _token = null;
     _userData = null;
     _errorMessage = null;
+    // Clear session cookie stored in AuthService
+    AuthService.clearSession();
     notifyListeners();
   }
 }
