@@ -86,27 +86,29 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       try {
-        // Simulasi registrasi (Anda bisa menambahkan endpoint registrasi di AuthService)
-        await Future.delayed(const Duration(seconds: 2)); // Simulasi delay
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
         
-        setState(() {
-          _isLoading = false;
-        });
-
-        // Tampilkan pesan sukses
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registrasi berhasil! Silakan login.')),
+        // Gunakan nama dari email jika tidak ada field nama terpisah
+        final name = _emailController.text.split('@')[0];
+        
+        final success = await authProvider.register(
+          _usernameController.text,
+          _emailController.text,
+          name,
+          _passwordController.text,
         );
         
-        // Kembali ke mode login
-        setState(() {
-          _isRegisterMode = false;
-          // Kosongkan form
-          _usernameController.clear();
-          _passwordController.clear();
-          _emailController.clear();
-          _confirmPasswordController.clear();
-        });
+        if (success) {
+          // Registrasi dan login otomatis berhasil
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        } else {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = authProvider.errorMessage ?? 'Registrasi gagal';
+          });
+        }
       } catch (e) {
         setState(() {
           _isLoading = false;

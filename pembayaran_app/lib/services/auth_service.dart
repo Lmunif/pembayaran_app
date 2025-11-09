@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/login_model.dart';
+import '../models/register_model.dart';
 import '../utils/app_navigator.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -103,5 +104,44 @@ class AuthService {
       return 'session_id=${match.group(1)}';
     }
     return null;
+  }
+
+  Future<RegisterResponse> register(String username, String email, String name, String password) async {
+    try {
+      var headers = {
+        'Content-Type': 'application/json',
+      };
+
+      var request = http.Request('POST', Uri.parse('$baseUrl/register'));
+      request.body = json.encode(RegisterRequest(
+        username: username,
+        email: email,
+        name: name,
+        password: password,
+      ).toJson());
+      request.headers.addAll(headers);
+
+      http.StreamedResponse response = await request.send();
+      String responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Map<String, dynamic> jsonResponse = json.decode(responseBody);
+        return RegisterResponse.fromJson(jsonResponse);
+      } else {
+        try {
+          final Map<String, dynamic> errJson = json.decode(responseBody);
+          final String msg = (errJson['message'] ?? errJson['error'] ??
+                  response.reasonPhrase ??
+                  'Registration failed')
+              .toString();
+          throw Exception(msg);
+        } catch (_) {
+          throw Exception(
+              response.reasonPhrase ?? 'Registration failed (${response.statusCode})');
+        }
+      }
+    } catch (e) {
+      throw Exception('Network error: ${e.toString()}');
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../models/login_model.dart';
+import '../models/register_model.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -61,5 +62,27 @@ class AuthProvider extends ChangeNotifier {
     // Clear session cookie stored in AuthService
     AuthService.clearSession();
     notifyListeners();
+  }
+
+  Future<bool> register(String username, String email, String name, String password) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _authService.register(username, email, name, password);
+      
+      _isLoading = false;
+      
+      // Setelah registrasi sukses, langsung login
+      return await login(username, password);
+      
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Registrasi gagal: ${e.toString()}';
+      
+      notifyListeners();
+      return false;
+    }
   }
 }
