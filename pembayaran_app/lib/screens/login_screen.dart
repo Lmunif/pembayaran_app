@@ -12,6 +12,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
+  final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _emailController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -22,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _usernameController.dispose();
+    _nameController.dispose();
     _passwordController.dispose();
     _emailController.dispose();
     _confirmPasswordController.dispose();
@@ -43,25 +45,32 @@ class _LoginScreenState extends State<LoginScreen> {
           _passwordController.text,
         );
 
+        if (!mounted) return;
         setState(() {
           _isLoading = false;
         });
 
         if (success) {
           // Login berhasil, navigasi ke halaman utama
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Login berhasil!')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Login berhasil!')),
+            );
+          }
           
           // Navigasi ke halaman utama
-          Navigator.pushReplacementNamed(context, '/home');
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/home');
+          }
         } else {
           // Login gagal, tampilkan pesan error dari provider
+          if (!mounted) return;
           setState(() {
             _errorMessage = authProvider.errorMessage ?? 'Login gagal';
           });
         }
       } catch (e) {
+        if (!mounted) return;
         setState(() {
           _isLoading = false;
           _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
@@ -88,13 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
       try {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         
-        // Gunakan nama dari email jika tidak ada field nama terpisah
-        final name = _emailController.text.split('@')[0];
-        
         final success = await authProvider.register(
           _usernameController.text,
           _emailController.text,
-          name,
+          _nameController.text, // gunakan nama dari field terpisah
           _passwordController.text,
         );
         
@@ -104,12 +110,14 @@ class _LoginScreenState extends State<LoginScreen> {
             Navigator.pushReplacementNamed(context, '/home');
           }
         } else {
+          if (!mounted) return;
           setState(() {
             _isLoading = false;
             _errorMessage = authProvider.errorMessage ?? 'Registrasi gagal';
           });
         }
       } catch (e) {
+        if (!mounted) return;
         setState(() {
           _isLoading = false;
           _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
@@ -260,6 +268,32 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
                       
+                      const SizedBox(height: 16),
+                      
+                      // Name field (hanya tampil saat registrasi)
+                      if (_isRegisterMode)
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: 'Nama',
+                            prefixIcon: const Icon(Icons.badge),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                          ),
+                          validator: (value) {
+                            if (_isRegisterMode) {
+                              if (value == null || value.isEmpty) {
+                                return 'Nama tidak boleh kosong';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                      const SizedBox(height: 16),
+                      
                       const SizedBox(height: 24),
                       
                       // Error message
@@ -314,6 +348,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (!_isRegisterMode) {
                               _emailController.clear();
                               _confirmPasswordController.clear();
+                              _nameController.clear();
                             }
                           });
                         },

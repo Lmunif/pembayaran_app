@@ -54,14 +54,27 @@ class AuthService {
       }
 
       if (response.statusCode == 200) {
-        Map<String, dynamic> jsonResponse = json.decode(responseBody);
-
-        // Some backends may also put session_id in JSON body
-        final bodySessionId = jsonResponse['session_id'];
-        if (bodySessionId is String && bodySessionId.isNotEmpty) {
-          _sessionCookie = 'session_id=' + bodySessionId;
+        // Fallback jika body kosong/tidak JSON: anggap sukses
+        if (responseBody.isEmpty) {
+          return LoginResponse(success: true);
         }
-        return LoginResponse.fromJson(jsonResponse);
+
+        try {
+          Map<String, dynamic> jsonResponse = json.decode(responseBody);
+
+          // Some backends may also put session_id in JSON body
+          final bodySessionId = jsonResponse['session_id'];
+          if (bodySessionId is String && bodySessionId.isNotEmpty) {
+            _sessionCookie = 'session_id=' + bodySessionId;
+          }
+
+          // Jika field 'success' tidak ada, set ke true karena status 200
+          jsonResponse['success'] = jsonResponse['success'] ?? true;
+          return LoginResponse.fromJson(jsonResponse);
+        } catch (_) {
+          // Jika parsing JSON gagal, tetap anggap login sukses
+          return LoginResponse(success: true);
+        }
       } else {
         // Session expired or unauthorized
         if (response.statusCode == 401 || response.statusCode == 403) {
@@ -125,8 +138,14 @@ class AuthService {
       String responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Map<String, dynamic> jsonResponse = json.decode(responseBody);
-        return RegisterResponse.fromJson(jsonResponse);
+        try {
+          final Map<String, dynamic> jsonResponse = json.decode(responseBody);
+          return RegisterResponse.fromJson(jsonResponse);
+        } catch (_) {
+          // Jika body kosong atau format tidak sesuai, tetap anggap sukses
+          // karena flow berikutnya adalah login otomatis.
+          return RegisterResponse();
+        }
       } else {
         try {
           final Map<String, dynamic> errJson = json.decode(responseBody);
