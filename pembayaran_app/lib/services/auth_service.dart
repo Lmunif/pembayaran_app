@@ -119,6 +119,54 @@ class AuthService {
     return null;
   }
 
+  Future<LoginResponse> logout() async {
+    try {
+      var headers = {
+        'Content-Type': 'application/json',
+      };
+
+      if (_sessionCookie != null && _sessionCookie!.isNotEmpty) {
+        headers['Cookie'] = _sessionCookie!;
+      }
+
+      var request = http.Request('POST', Uri.parse('$baseUrl/logout'));
+      request.headers.addAll(headers);
+
+      http.StreamedResponse response = await request.send();
+      String responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        if (responseBody.isEmpty) {
+          return LoginResponse(success: true, message: 'Logout successful');
+        }
+
+        try {
+          final Map<String, dynamic> jsonResponse = json.decode(responseBody);
+          return LoginResponse(
+            success: jsonResponse['success'] ?? true,
+            message: jsonResponse['message']?.toString(),
+          );
+        } catch (_) {
+          return LoginResponse(success: true, message: 'Logout successful');
+        }
+      } else {
+        try {
+          final Map<String, dynamic> errJson = json.decode(responseBody);
+          final String msg = (errJson['message'] ?? errJson['error'] ??
+                  response.reasonPhrase ??
+                  'Logout failed')
+              .toString();
+          return LoginResponse.error(msg);
+        } catch (_) {
+          return LoginResponse.error(
+              response.reasonPhrase ?? 'Logout failed (${response.statusCode})');
+        }
+      }
+    } catch (e) {
+      return LoginResponse.error('Network error: ${e.toString()}');
+    }
+  }
+
   Future<RegisterResponse> register(String username, String email, String name, String password) async {
     try {
       var headers = {

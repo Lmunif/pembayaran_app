@@ -74,13 +74,26 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  void logout() {
-    _isAuthenticated = false;
-    _token = null;
-    _userData = null;
+  Future<bool> logout() async {
+    _isLoading = true;
     _errorMessage = null;
-    // Clear session cookie stored in AuthService
-    AuthService.clearSession();
     notifyListeners();
+
+    final result = await _authService.logout();
+
+    _isLoading = false;
+    if (result.success) {
+      _isAuthenticated = false;
+      _token = null;
+      _userData = null;
+      _errorMessage = null;
+      AuthService.clearSession();
+      notifyListeners();
+      return true;
+    } else {
+      _errorMessage = result.message ?? 'Logout gagal';
+      notifyListeners();
+      return false;
+    }
   }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -63,8 +65,50 @@ class ProfileScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // Implementasi logika logout
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final navigator = Navigator.of(context);
+                  messenger.hideCurrentSnackBar();
+
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    },
+                  );
+
+                  try {
+                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    final success = await authProvider.logout();
+                    navigator.pop();
+
+                    if (success) {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Logout berhasil'),
+                        ),
+                      );
+                      navigator.pushNamedAndRemoveUntil('/login', (route) => false);
+                    } else {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            authProvider.errorMessage ?? 'Logout gagal',
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    navigator.pop();
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text('Terjadi kesalahan: $e'),
+                      ),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
