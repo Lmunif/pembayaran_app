@@ -79,21 +79,25 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final result = await _authService.logout();
-
-    _isLoading = false;
-    if (result.success) {
-      _isAuthenticated = false;
-      _token = null;
-      _userData = null;
-      _errorMessage = null;
-      AuthService.clearSession();
-      notifyListeners();
-      return true;
-    } else {
-      _errorMessage = result.message ?? 'Logout gagal';
-      notifyListeners();
-      return false;
+    try {
+      // Panggil API logout ke server
+      await _authService.logout();
+    } catch (e) {
+      // Abaikan error network agar user tetap bisa logout secara lokal
+      debugPrint('Logout API error: $e');
     }
+
+    // Selalu hapus state lokal terlepas dari hasil API
+    _isAuthenticated = false;
+    _token = null;
+    _userData = null;
+    _errorMessage = null;
+    _isLoading = false;
+    
+    // Bersihkan session cookie di AuthService
+    AuthService.clearSession();
+    
+    notifyListeners();
+    return true;
   }
 }
